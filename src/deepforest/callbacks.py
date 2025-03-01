@@ -64,8 +64,7 @@ class images_callback(Callback):
             my_color = [self.color[2], self.color[1], self.color[0]]  
         else:
             my_color = [245, 135, 66]  # Default orange from plot_results
-
-
+            
         visualize.plot_results(
             results=df,  
             savedir=self.savedir,  
