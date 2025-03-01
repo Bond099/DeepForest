@@ -58,21 +58,28 @@ class images_callback(Callback):
             selected_images = df.image_path.unique()[:self.n]
         df = df[df.image_path.isin(selected_images)]
 
-        visualize.plot_prediction_dataframe(
-            df,
-            root_dir=pl_module.config["validation"]["root_dir"],
-            savedir=self.savedir,
-            color=self.color,
-            thickness=self.thickness)
+        # The new plot_results needs root_dir in the dataframe, not as an arg
+        df["root_dir"] = pl_module.config["validation"]["root_dir"]
+        if self.color:
+            my_color = [self.color[2], self.color[1], self.color[0]]  # Flip it
+        else:
+            my_color = [245, 135, 66]  # Default orange from plot_results
 
+
+        visualize.plot_results(
+            results=df,  # Here’s the predictions
+            savedir=self.savedir,  # Dump the pics here
+            results_color=my_color,  # Use the flipped RGB color
+            thickness=self.thickness  # Same old thickness
+        )
+
+        # Now let’s try to log these to whatever tracker we’re using
         try:
-            saved_plots = glob.glob("{}/*.png".format(self.savedir))
-            for x in saved_plots:
-                pl_module.logger.experiment.log_image(x)
+            saved_pics = glob.glob(f"{self.savedir}/*.png")
+            for pic in saved_pics:
+                pl_module.logger.experiment.log_image(pic)
         except Exception as e:
-            print("Could not find comet logger in lightning module, "
-                  "skipping upload, images were saved to {}, "
-                  "error was rasied {}".format(self.savedir, e))
+            print(f"Eh, logging didn’t work—saved to {self.savedir} anyway. Error was: {e}")
 
     def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip
