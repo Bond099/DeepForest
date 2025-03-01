@@ -61,14 +61,14 @@ class images_callback(Callback):
         # The new plot_results needs root_dir in the dataframe, not as an arg
         df["root_dir"] = pl_module.config["validation"]["root_dir"]
         if self.color:
-            my_color = [self.color[2], self.color[1], self.color[0]]  # Flip it
+            my_color = [self.color[2], self.color[1], self.color[0]]  
         else:
             my_color = [245, 135, 66]  # Default orange from plot_results
 
 
         visualize.plot_results(
-            results=df,  # Here’s the predictions
-            savedir=self.savedir,  # Dump the pics here
+            results=df,  
+            savedir=self.savedir,  
             results_color=my_color,  # Use the flipped RGB color
             thickness=self.thickness  # Same old thickness
         )
