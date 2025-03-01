@@ -21,6 +21,10 @@ from deepforest import evaluate as evaluate_iou
 
 from huggingface_hub import PyTorchModelHubMixin
 from lightning_fabric.utilities.exceptions import MisconfigurationException
+try:
+    import kangas as kg
+except ImportError:
+    kg = None
 
 
 class deepforest(pl.LightningModule, PyTorchModelHubMixin):
@@ -126,6 +130,59 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters()
 
+    def visualize_kangas(self, predictions, image_paths=None):
+     """ Visualize predictions using Kangas.
+
+        Args:
+        predictions: Can be pd.DataFrame, list of pd.DataFrames, or list of dicts from predictions.
+        image_paths (list, optional): List of image paths if not included in predictions.
+     """
+     if kg is None:
+        print("Kangas is not installed. Run 'pip install kangas' to enable visualization.")
+        return
+
+    # Handle different prediction formats
+     if isinstance(predictions, pd.DataFrame):
+        df = predictions
+     elif isinstance(predictions, list) and all(isinstance(p, pd.DataFrame) for p in predictions):
+        df = pd.concat(predictions, ignore_index=True)
+     elif isinstance(predictions, list) and all(isinstance(p, dict) for p in predictions):
+        # Convert list of dicts to DataFrame (from predict_step)
+        records = []
+        for i, pred in enumerate(predictions):
+            for box in pred.get("boxes", []):
+                records.append({
+                    "xmin": box[0], "ymin": box[1], "xmax": box[2], "ymax": box[3],
+                    "label": pred["labels"][i] if i < len(pred["labels"]) else "unknown",
+                    "score": pred["scores"][i] if i < len(pred["scores"]) else 0.0,
+                    "image_path": image_paths[i] if image_paths and i < len(image_paths) else f"image_{i}"
+                })
+        df = pd.DataFrame(records)
+     else:
+        print("Unsupported predictions format for Kangas visualization.")
+        return
+
+    # Ensure image_path exists
+     if "image_path" not in df.columns and not image_paths:
+        print("No image paths provided for Kangas visualization.")
+        return
+
+    # Use root_dir if available and paths are relative
+    root_dir = getattr(df, "root_dir", None) if hasattr(df, "root_dir") else None
+    if root_dir and "image_path" in df.columns and not os.path.isabs(df["image_path"].iloc[0]):
+        df["image_path"] = df["image_path"].apply(lambda x: os.path.join(root_dir, x))
+
+    # Group by image_path
+    grouped = df.groupby("image_path")
+    data = []
+    for image_path, group in grouped:
+        boxes = group[["xmin", "ymin", "xmax", "ymax", "label", "score"]].to_dict(orient="records")
+        data.append({"image_path": image_path, "bounding_boxes": boxes})
+
+    # Create and show Kangas DataGrid
+    grid = kg.DataGrid(data, name="DeepForest Predictions")
+    grid.show()
+    
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
@@ -818,6 +875,15 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
                 if empty_accuracy is not None:
                     results["empty_frame_accuracy"] = empty_accuracy
+                
+                # Check config for Kangas visualization
+                if self.config.get("visualize_with") == "kangas":
+                  self.visualize_evaluation_kangas(
+                    predictions=self.predictions_df,
+                    ground_df=ground_df,
+                    root_dir=self.config["validation"]["root_dir"],
+                    evaluation_results=results
+                )    
 
                 # Log each key value pair of the results dict
                 if not results["class_recall"] is None:
@@ -971,5 +1037,13 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             root_dir=root_dir,
             iou_threshold=iou_threshold,
             numeric_to_label_dict=self.numeric_to_label_dict)
+        # If user wants Kangas visualization
+        if visualize_with == "kangas":
+          self.visualize_evaluation_kangas(
+            predictions=predictions,
+            ground_df=ground_df,
+            root_dir=root_dir,
+            evaluation_results=results
+        )
 
         return results
