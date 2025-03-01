@@ -130,59 +130,40 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters()
 
-    def visualize_kangas(self, predictions, image_paths=None):
-     """ Visualize predictions using Kangas.
+    def visualize_kangas(self, predictions):
+        if not isinstance(predictions, pd.DataFrame):
+            raise ValueError("Predictions must be a pandas DataFrame")
 
-        Args:
-        predictions: Can be pd.DataFrame, list of pd.DataFrames, or list of dicts from predictions.
-        image_paths (list, optional): List of image paths if not included in predictions.
-     """
-     if kg is None:
-        print("Kangas is not installed. Run 'pip install kangas' to enable visualization.")
-        return
+        required_columns = ["image_path", "xmin", "ymin", "xmax", "ymax", "label", "score"]
+        missing_columns = [col for col in required_columns if col not in predictions.columns]
+        if missing_columns:
+            raise ValueError(f"Predictions DataFrame is missing columns: {', '.join(missing_columns)}")
 
-    # Handle different prediction formats
-     if isinstance(predictions, pd.DataFrame):
-        df = predictions
-     elif isinstance(predictions, list) and all(isinstance(p, pd.DataFrame) for p in predictions):
-        df = pd.concat(predictions, ignore_index=True)
-     elif isinstance(predictions, list) and all(isinstance(p, dict) for p in predictions):
-        # Convert list of dicts to DataFrame (from predict_step)
-        records = []
-        for i, pred in enumerate(predictions):
-            for box in pred.get("boxes", []):
-                records.append({
-                    "xmin": box[0], "ymin": box[1], "xmax": box[2], "ymax": box[3],
-                    "label": pred["labels"][i] if i < len(pred["labels"]) else "unknown",
-                    "score": pred["scores"][i] if i < len(pred["scores"]) else 0.0,
-                    "image_path": image_paths[i] if image_paths and i < len(image_paths) else f"image_{i}"
-                })
-        df = pd.DataFrame(records)
-     else:
-        print("Unsupported predictions format for Kangas visualization.")
-        return
+        try:
+            import kangas as kg
+        except ModuleNotFoundError:
+            print("Kangas is not installed. Please install it with 'pip install kangas' to use this feature.")
+            return
 
-    # Ensure image_path exists
-     if "image_path" not in df.columns and not image_paths:
-        print("No image paths provided for Kangas visualization.")
-        return
-
-    # Use root_dir if available and paths are relative
-    root_dir = getattr(df, "root_dir", None) if hasattr(df, "root_dir") else None
-    if root_dir and "image_path" in df.columns and not os.path.isabs(df["image_path"].iloc[0]):
-        df["image_path"] = df["image_path"].apply(lambda x: os.path.join(root_dir, x))
+    # Ensure image_path is absolute
+        if not os.path.isabs(predictions["image_path"].iloc[0]):
+            if not hasattr(predictions, "root_dir"):
+                raise ValueError("Cannot make image_path absolute without root_dir")
+        predictions["image_path"] = predictions["image_path"].apply(
+                lambda x: os.path.join(predictions.root_dir, x)
+            )
 
     # Group by image_path
-    grouped = df.groupby("image_path")
-    data = []
-    for image_path, group in grouped:
-        boxes = group[["xmin", "ymin", "xmax", "ymax", "label", "score"]].to_dict(orient="records")
-        data.append({"image_path": image_path, "bounding_boxes": boxes})
+        grouped = predictions.groupby("image_path")
+
+        data = []
+        for image_path, group in grouped:
+            bounding_boxes = group[["xmin", "ymin", "xmax", "ymax", "label", "score"]].to_dict(orient="records")
+            data.append({"image_path": image_path, "bounding_boxes": bounding_boxes})
 
     # Create and show Kangas DataGrid
-    grid = kg.DataGrid(data, name="DeepForest Predictions")
-    grid.show()
-    
+        dg = kg.DataGrid(data, name="DeepForest Predictions")
+        dg.show()  
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
@@ -485,6 +466,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             root_dir = os.path.dirname(path)
             result = utilities.read_file(result, root_dir=root_dir)
+        # Visualize if requested
+        if visualize_with == "kangas":
+            self.visualize_kangas(result)    
 
         return result
 
@@ -526,6 +510,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                                thickness=thickness)
 
         results.root_dir = root_dir
+        # Visualize if requested
+        if visualize_with == "kangas":
+          self.visualize_kangas(results)
 
         return results
 
@@ -681,6 +668,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             root_dir = os.path.dirname(raster_path)
             results = utilities.read_file(results, root_dir=root_dir)
+            
+        if visualize_with == "kangas":
+          if mosaic:
+            self.visualize_kangas(results)
+          else:
+            print("Visualization with Kangas is only supported when mosaic=True")    
 
         return results
 
