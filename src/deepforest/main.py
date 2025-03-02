@@ -4,9 +4,6 @@ import os
 import typing
 import warnings
 import kangas as kg
-import ssl
-
-ssl._create_default_https_context = ssl._create_unverified_context
 
 import numpy as np
 import pandas as pd
