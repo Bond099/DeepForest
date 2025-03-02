@@ -1,6 +1,6 @@
 # Extending DeepForest with Custom Models and Dataloaders
 
-DeepForest allows users to specify custom model architectures if they follow certain guidelines. 
+DeepForest allows users to specify custom model architectures if they follow certain guidelines.
 To create a compliant format, follow the recipe below.
 
 ## Subclass the model.Model() structure
@@ -14,7 +14,7 @@ import torch
 
 class Model():
     """A architecture agnostic class that controls the basic train, eval and predict functions.
-    A model should optionally allow a backbone for pretraining. To add new architectures, simply create a new module in models/ and write a create_model. 
+    A model should optionally allow a backbone for pretraining. To add new architectures, simply create a new module in models/ and write a create_model.
     Then add the result to the if else statement below.
     Args:
         num_classes (int): number of classes in the model
@@ -30,11 +30,11 @@ class Model():
 
         # Check input output format:
         self.check_model()
-    
+
     def create_model():
         """This function converts a deepforest config file into a model. An architecture should have a list of nested arguments in config that match this function"""
         raise ValueError("The create_model class method needs to be implemented. Take in args and return a pytorch nn module.")
-    
+
     def check_model(self):
         """
         Ensure that model follows deepforest guidelines
@@ -44,7 +44,7 @@ class Model():
         test_model = self.create_model()
         test_model.eval()
 
-        # Create a dummy batch of 3 band data. 
+        # Create a dummy batch of 3 band data.
         x = [torch.rand(3, 300, 400), torch.rand(3, 500, 400)]
 
         predictions = test_model(x)
@@ -88,7 +88,7 @@ m.create_trainer()
 m.trainer.fit()
 ```
 
-For prediction directly on a dataloader, we need a dataloader that yields images, see [TileDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TileDataset) for an example. Any dataloader could be supplied to m.trainer.predict as long as it meets this specification.  
+For prediction directly on a dataloader, we need a dataloader that yields images, see [TileDataset](https://deepforest.readthedocs.io/en/latest/source/deepforest.html#deepforest.dataset.TileDataset) for an example. Any dataloader could be supplied to m.trainer.predict as long as it meets this specification.
 
 ```
 ds = dataset.TileDataset(tile=np.random.random((400,400,3)).astype("float32"), patch_overlap=0.1, patch_size=100)

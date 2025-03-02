@@ -96,7 +96,7 @@ def __evaluate_wrapper__(predictions,
                          numeric_to_label_dict,
                          savedir=None):
     """Evaluate a set of predictions against a ground truth csv file
-        Args:   
+        Args:
             predictions: a pandas dataframe, if supplied a root dir is needed to give the relative path of files in df.name. The labels in ground truth and predictions must match. If one is numeric, the other must be numeric.
             root_dir: location of files in the dataframe 'name' column.
             iou_threshold: intersection-over-union threshold, see deepforest.evaluate

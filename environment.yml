@@ -52,4 +52,3 @@ dependencies:
     - docformatter
     - opencv-python-headless
     - safetensors
-

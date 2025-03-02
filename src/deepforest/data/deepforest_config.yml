@@ -20,11 +20,11 @@ retinanet:
 train:
     csv_file:
     root_dir:
-    
+
     # Optimizer initial learning rate
     lr: 0.001
     scheduler:
-        type: 
+        type:
         params:
             # Common parameters
             T_max: 10
@@ -50,10 +50,10 @@ train:
     fast_dev_run: False
     # pin images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
-    
+
 validation:
     # callback args
-    csv_file: 
+    csv_file:
     root_dir:
     # Intersection over union evaluation
     iou_threshold: 0.4

@@ -28,7 +28,7 @@ m.load_model(model_name="weecology/deepforest-tree")
 The model was initially described in [Ecological Applications](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2694). From the abstract
 
 >
- Using over 250,000 annotations from 13 projects from around the world, we develop a general bird detection model that achieves over 65% recall and 50% precision on novel aerial data without any local training despite differences in species, habitat, and imaging methodology. Fine-tuning this model with only 1000 local annotations increases these values to an average of 84% recall and 69% precision by building on the general features learned from other data sources. 
+ Using over 250,000 annotations from 13 projects from around the world, we develop a general bird detection model that achieves over 65% recall and 50% precision on novel aerial data without any local training despite differences in species, habitat, and imaging methodology. Fine-tuning this model with only 1000 local annotations increases these values to an average of 84% recall and 69% precision by building on the general features learned from other data sources.
  >
 
 
@@ -52,7 +52,7 @@ For more information, or specific questions about the bird detection, please cre
 
 ## Livestock Detectors model
 
-This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings. 
+This model has a single label 'cattle' trained on drone imagery of cows, sheep and other large mammals in agricultural settings.
 
 ![image](../../www/livestock-example.png)
 
@@ -85,4 +85,4 @@ Citation: Weinstein, Ben G., et al. "Capturing long‐tailed individual tree div
 
 ## Want more pretrained models?
 
-Please consider contributing your data to open source repositories, such as zenodo or lila.science. The more data we gather, the more we can combine the annotation and data collection efforts of hundreds of researchers to built models available to everyone. We welcome suggestions on what models and data are most urgently [needed](https://github.com/weecology/DeepForest/discussions). 
+Please consider contributing your data to open source repositories, such as zenodo or lila.science. The more data we gather, the more we can combine the annotation and data collection efforts of hundreds of researchers to built models available to everyone. We welcome suggestions on what models and data are most urgently [needed](https://github.com/weecology/DeepForest/discussions).

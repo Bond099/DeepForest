@@ -3,6 +3,10 @@ import importlib
 import os
 import typing
 import warnings
+import kangas as kg
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 import numpy as np
 import pandas as pd
@@ -21,10 +25,6 @@ from deepforest import evaluate as evaluate_iou
 
 from huggingface_hub import PyTorchModelHubMixin
 from lightning_fabric.utilities.exceptions import MisconfigurationException
-try:
-    import kangas as kg
-except ImportError:
-    kg = None
 
 
 class deepforest(pl.LightningModule, PyTorchModelHubMixin):
@@ -38,6 +38,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             e.g. {"batch_size":10}. This is useful for iterating over arguments during model testing.
         existing_train_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
         existing_val_dataloader: a Pytorch dataloader that yields a tuple path, images, targets
+
+    Notes:
+        Kangas visualization is supported in predict_* and evaluate methods with visualize_with="kangas".
+        Install Kangas with `pip install kangas` to enable this optional feature.
 
     Returns:
         self: a deepforest pytorch lightning module
@@ -130,40 +134,134 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters()
 
-    def visualize_kangas(self, predictions):
-        if not isinstance(predictions, pd.DataFrame):
-            raise ValueError("Predictions must be a pandas DataFrame")
+    def visualize_evaluation_kangas(
+            self,
+            predictions: pd.DataFrame,
+            ground_df: pd.DataFrame,
+            root_dir: str,
+            evaluation_results: typing.Optional[dict] = None) -> None:
+        """Use Kangas to visualize predictions and ground truth data from
+        evaluation.
 
-        required_columns = ["image_path", "xmin", "ymin", "xmax", "ymax", "label", "score"]
-        missing_columns = [col for col in required_columns if col not in predictions.columns]
-        if missing_columns:
-            raise ValueError(f"Predictions DataFrame is missing columns: {', '.join(missing_columns)}")
+        Args:
+            predictions: Predictions DataFrame with columns "image_path", "xmin", "ymin", "xmax", "ymax", "label", "score".
+            ground_df: Ground truth DataFrame with columns "image_path", "xmin", "ymin", "xmax", "ymax", "label".
+            root_dir: Directory where images are stored.
+            evaluation_results: Optional dictionary of metrics (e.g., precision, recall) to display alongside.
 
-        try:
-            import kangas as kg
-        except ModuleNotFoundError:
-            print("Kangas is not installed. Please install it with 'pip install kangas' to use this feature.")
+        Returns:
+            None
+        """
+        if kg is None:
+            print(
+                "Kangas is not installed. Run 'pip install kangas' to enable visualization."
+            )
             return
 
-    # Ensure image_path is absolute
-        if not os.path.isabs(predictions["image_path"].iloc[0]):
-            if not hasattr(predictions, "root_dir"):
-                raise ValueError("Cannot make image_path absolute without root_dir")
-        predictions["image_path"] = predictions["image_path"].apply(
-                lambda x: os.path.join(predictions.root_dir, x)
+        kangas_data = []
+        for _, row in ground_df.iterrows():
+            image_path = os.path.join(root_dir, row["image_path"])
+            kangas_data.append({
+                "image_path":
+                    image_path,
+                "bounding_boxes": [{
+                    "xmin": row["xmin"],
+                    "ymin": row["ymin"],
+                    "xmax": row["xmax"],
+                    "ymax": row["ymax"],
+                    "label": f"GT_{row['label']}",
+                    "score": 1.0
+                }]
+            })
+
+        for _, row in predictions.iterrows():
+            image_path = os.path.join(root_dir, row["image_path"])
+            kangas_data.append({
+                "image_path":
+                    image_path,
+                "bounding_boxes": [{
+                    "xmin": row["xmin"],
+                    "ymin": row["ymin"],
+                    "xmax": row["xmax"],
+                    "ymax": row["ymax"],
+                    "label": f"Pred_{row['label']}",
+                    "score": row["score"]
+                }]
+            })
+
+        try:
+            grid = kg.DataGrid(kangas_data, name="DeepForest Evaluation")
+            grid.show()
+        except Exception as e:
+            print(f"Kangas evaluation failed :{e}")
+
+        if evaluation_results:
+            metrics_data = [{
+                "Metric": key,
+                "Value": value
+            }
+                            for key, value in evaluation_results.items()
+                            if isinstance(value, (int, float))]
+            if metrics_data:
+                metrics_grid = kg.DataGrid(metrics_data, name="Evaluation Metrics")
+                metrics_grid.show()
+
+    def visualize_kangas(self,
+                         predictions: typing.Union[pd.DataFrame,
+                                                   typing.List[pd.DataFrame]],
+                         image_paths: typing.Optional[typing.List[str]] = None) -> None:
+        """Visualize predictions using Kangas.
+
+        Args:
+            predictions: DataFrame or list of DataFrames with "image_path", "xmin", "ymin", "xmax", "ymax", "label", "score"
+            image_paths: Optional list of image paths if not included in predictions
+        """
+        if kg is None:
+            print(
+                "Kangas is not installed. Run 'pip install kangas' to enable visualization."
             )
+            return
 
-    # Group by image_path
-        grouped = predictions.groupby("image_path")
+        # Handle different prediction formats
+        if isinstance(predictions, pd.DataFrame):
+            df = predictions
+        elif isinstance(predictions, list) and all(
+                isinstance(p, pd.DataFrame) for p in predictions):
+            df = pd.concat(predictions, ignore_index=True)
+        else:
+            raise ValueError("Predictions must be a DataFrame or list of DataFrames")
 
-        data = []
-        for image_path, group in grouped:
-            bounding_boxes = group[["xmin", "ymin", "xmax", "ymax", "label", "score"]].to_dict(orient="records")
-            data.append({"image_path": image_path, "bounding_boxes": bounding_boxes})
+        # Ensure image paths are available
+        if "image_path" not in df.columns:
+            if not image_paths:
+                raise ValueError("image_paths must be provided if not in predictions")
+            if len(image_paths) != (len(predictions)
+                                    if isinstance(predictions, list) else 1):
+                raise ValueError("Length of image_paths must match predictions")
+            df["image_path"] = image_paths if isinstance(
+                predictions, list) else [image_paths[0]] * len(df)
 
-    # Create and show Kangas DataGrid
-        dg = kg.DataGrid(data, name="DeepForest Predictions")
-        dg.show()  
+        # Use root_dir if available
+        root_dir = getattr(df, "root_dir", None) if hasattr(df, "root_dir") else None
+        if root_dir and not os.path.isabs(df["image_path"].iloc[0]):
+            df["image_path"] = df["image_path"].apply(lambda x: os.path.join(root_dir, x))
+
+        # Group predictions by image_path
+        grouped = df.groupby("image_path")
+        kangas_data = [{
+            "image_path":
+                image_path,
+            "bounding_boxes":
+                group[["xmin", "ymin", "xmax", "ymax", "label",
+                       "score"]].to_dict(orient="records")
+        } for image_path, group in grouped]
+
+        try:
+            grid = kg.DataGrid(kangas_data, name="DeepForest Predictions")
+            grid.show()
+        except Exception as e:
+            print(f"Kangas visualization failed: {e}")
+
     def load_model(self, model_name="weecology/deepforest-tree", revision='main'):
         """Loads a model that has already been pretrained for a specific task,
         like tree crown detection.
@@ -374,7 +472,10 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                        batch_size=self.config["batch_size"])
         return loader
 
-    def predict_dataloader(self, ds):
+    def predict_dataloader(
+            self,
+            ds: torch.utils.data.Dataset,
+            visualize_with: typing.Optional[str] = None) -> torch.utils.data.DataLoader:
         """Create a PyTorch dataloader for prediction.
 
         Args:
@@ -388,6 +489,20 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                                              shuffle=False,
                                              num_workers=self.config["workers"])
 
+        if visualize_with == "kangas":
+            # Generate predictions and visualize
+            predictions = self.trainer.predict(self, loader)
+            if predictions:
+                flattened_predictions = [item for batch in predictions for item in batch]
+                # Extract image paths from dataset if available, else use placeholder
+                image_paths = [
+                    getattr(ds, "paths",
+                            [f"image_{i}"
+                             for i in range(len(flattened_predictions))])[i]
+                    for i in range(len(flattened_predictions))
+                ]
+                self.visualize_kangas(flattened_predictions, image_paths)
+
         return loader
 
     def predict_image(self,
@@ -395,7 +510,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                       path: typing.Optional[str] = None,
                       return_plot: bool = False,
                       color: typing.Optional[tuple] = (0, 165, 255),
-                      thickness: int = 1):
+                      thickness: int = 1,
+                      visualize_with: typing.Optional[str] = None):
         """Predict a single image with a deepforest model.
 
         Deprecation warning: The 'return_plot', and related 'color' and 'thickness' arguments
@@ -468,11 +584,17 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             result = utilities.read_file(result, root_dir=root_dir)
         # Visualize if requested
         if visualize_with == "kangas":
-            self.visualize_kangas(result)    
+            self.visualize_kangas(result)
 
         return result
 
-    def predict_file(self, csv_file, root_dir, savedir=None, color=None, thickness=1):
+    def predict_file(self,
+                     csv_file,
+                     root_dir,
+                     savedir=None,
+                     color=None,
+                     thickness=1,
+                     visualize_with=None):
         """Create a dataset and predict entire annotation file Csv file format
         is .csv file with the columns "image_path", "xmin","ymin","xmax","ymax"
         for the image name and bounding box position. Image_path is the
@@ -512,7 +634,7 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         results.root_dir = root_dir
         # Visualize if requested
         if visualize_with == "kangas":
-          self.visualize_kangas(results)
+            self.visualize_kangas(results)
 
         return results
 
@@ -531,7 +653,8 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                      thickness=1,
                      crop_model=None,
                      crop_transform=None,
-                     crop_augment=False):
+                     crop_augment=False,
+                     visualize_with=None):
         """For images too large to input into the model, predict_tile cuts the
         image into overlapping windows, predicts trees on each window and
         reassambles into a single array.
@@ -668,12 +791,11 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             root_dir = os.path.dirname(raster_path)
             results = utilities.read_file(results, root_dir=root_dir)
-            
-        if visualize_with == "kangas":
-          if mosaic:
+
+        if visualize_with == "kangas" and mosaic:
             self.visualize_kangas(results)
-          else:
-            print("Visualization with Kangas is only supported when mosaic=True")    
+        elif visualize_with == "kangas":
+            print("Kangas visualization only supported with mosaic=True.")
 
         return results
 
@@ -868,15 +990,14 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
                 if empty_accuracy is not None:
                     results["empty_frame_accuracy"] = empty_accuracy
-                
+
                 # Check config for Kangas visualization
                 if self.config.get("visualize_with") == "kangas":
-                  self.visualize_evaluation_kangas(
-                    predictions=self.predictions_df,
-                    ground_df=ground_df,
-                    root_dir=self.config["validation"]["root_dir"],
-                    evaluation_results=results
-                )    
+                    self.visualize_evaluation_kangas(
+                        predictions=self.predictions_df,
+                        ground_df=ground_df,
+                        root_dir=self.config["validation"]["root_dir"],
+                        evaluation_results=results)
 
                 # Log each key value pair of the results dict
                 if not results["class_recall"] is None:
@@ -903,16 +1024,32 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
                             except MisconfigurationException:
                                 pass
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(
+        self,
+        batch: typing.Any,
+        batch_idx: int,
+        visualize_with: typing.Optional[str] = None,
+        image_paths: typing.Optional[typing.List[str]] = None
+    ) -> typing.List[pd.DataFrame]:
+
         batch_results = self.model(batch)
 
         results = []
         for result in batch_results:
             boxes = visualize.format_boxes(result)
             results.append(boxes)
+
+        if visualize_with == "kangas":
+            self.visualize_kangas(results, image_paths)
         return results
 
-    def predict_batch(self, images, preprocess_fn=None):
+    def predict_batch(
+        self,
+        images: typing.Union[torch.Tensor, np.ndarray],
+        preprocess_fn: typing.Optional[typing.Callable] = None,
+        visualize_with: typing.Optional[str] = None,
+        image_paths: typing.Optional[typing.List[str]] = None
+    ) -> typing.List[pd.DataFrame]:
         """Predict a batch of images with the deepforest model.
 
         Args:
@@ -945,6 +1082,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
 
         #convert predictions to dataframes
         results = [utilities.read_file(pred) for pred in predictions if pred is not None]
+
+        if visualize_with == "kangas":
+            self.visualize_kangas(results, image_paths=image_paths)
 
         return results
 
@@ -1004,7 +1144,12 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
         else:
             return optimizer
 
-    def evaluate(self, csv_file, root_dir, iou_threshold=None, savedir=None):
+    def evaluate(self,
+                 csv_file,
+                 root_dir,
+                 iou_threshold=None,
+                 savedir=None,
+                 visualize_with=None):
         """Compute intersection-over-union and precision/recall for a given
         iou_threshold.
 
@@ -1032,11 +1177,9 @@ class deepforest(pl.LightningModule, PyTorchModelHubMixin):
             numeric_to_label_dict=self.numeric_to_label_dict)
         # If user wants Kangas visualization
         if visualize_with == "kangas":
-          self.visualize_evaluation_kangas(
-            predictions=predictions,
-            ground_df=ground_df,
-            root_dir=root_dir,
-            evaluation_results=results
-        )
+            self.visualize_evaluation_kangas(predictions=predictions,
+                                             ground_df=ground_df,
+                                             root_dir=root_dir,
+                                             evaluation_results=results)
 
         return results

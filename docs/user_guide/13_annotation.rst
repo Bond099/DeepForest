@@ -3,7 +3,7 @@ Annotation
 
 Annotations play a crucial role in machine learning projects. If you're unhappy with your model's performance, annotating new samples is the best first step to improving it.
 
-*Note: DeepForest >1.4.0 supports annotations in COCO and Pascal VOC format.* 
+*Note: DeepForest >1.4.0 supports annotations in COCO and Pascal VOC format.*
 
 The machine learning annotation space is moving very quickly, there are dozens of annotation tools and formats. DeepForest supports the following formats:
 
@@ -25,7 +25,7 @@ An incomplete list of annotation tools DeepForest users have reported success wi
 - AWS Ground Truth
 - LabelBox
 - Roboflow
-- and many more 
+- and many more
 
 We intentionally do not create our own annotation tools, but rather focus on supporting the community created tools. Look for exports in .xml, .json or .csv formats, which are all common in the above tools.
 

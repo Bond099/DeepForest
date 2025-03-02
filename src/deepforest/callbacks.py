@@ -61,13 +61,13 @@ class images_callback(Callback):
         # The new plot_results needs root_dir in the dataframe, not as an arg
         df["root_dir"] = pl_module.config["validation"]["root_dir"]
         if self.color:
-            my_color = [self.color[2], self.color[1], self.color[0]]  
+            my_color = [self.color[2], self.color[1], self.color[0]]
         else:
             my_color = [245, 135, 66]  # Default orange from plot_results
-            
+
         visualize.plot_results(
-            results=df,  
-            savedir=self.savedir,  
+            results=df,
+            savedir=self.savedir,
             results_color=my_color,  # Use the flipped RGB color
             thickness=self.thickness  # Same old thickness
         )
@@ -78,7 +78,8 @@ class images_callback(Callback):
             for pic in saved_pics:
                 pl_module.logger.experiment.log_image(pic)
         except Exception as e:
-            print(f"Eh, logging didn’t work—saved to {self.savedir} anyway. Error was: {e}")
+            print(
+                f"Eh, logging didn’t work—saved to {self.savedir} anyway. Error was: {e}")
 
     def on_validation_epoch_end(self, trainer, pl_module):
         if trainer.sanity_checking:  # optional skip

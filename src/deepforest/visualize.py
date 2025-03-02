@@ -136,7 +136,7 @@ def plot_prediction_dataframe(df,
 def plot_points(image, points, color=None, radius=5, thickness=1):
     """Plot points on an image
     Args:
-        image: a numpy array in *BGR* color order! Channel order is channels first 
+        image: a numpy array in *BGR* color order! Channel order is channels first
         points: a numpy array of shape (N, 2) representing the coordinates of the points
         color: color of the points as a tuple of BGR color, e.g. orange points is (0, 165, 255)
         radius: radius of the points in px

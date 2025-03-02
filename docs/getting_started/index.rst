@@ -84,4 +84,3 @@ DeepForest is a python package for airborne object detection and classification.
     overview
     intro_tutorials/index
     comparison
-

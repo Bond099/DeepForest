@@ -13,7 +13,7 @@ For example
 
    conda create -n DeepForest python=3.11
    conda activate DeepForest
-   
+
 ::
 
    pip install DeepForest
@@ -103,4 +103,3 @@ pytorch.to() method.
 
 Distributed multi-gpu prediction outside of the training module is not
 yet implemented. We welcome pull requests for additional support.
-

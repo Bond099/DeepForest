@@ -2,7 +2,7 @@
 
 ### Increase batch size
 
-It is more efficient to run a larger batch size on a single GPU. This is because the overhead of loading data and moving data between the CPU and GPU is relatively large. By running a larger batch size, we can reduce the overhead of these operations. 
+It is more efficient to run a larger batch size on a single GPU. This is because the overhead of loading data and moving data between the CPU and GPU is relatively large. By running a larger batch size, we can reduce the overhead of these operations.
 
 ```
 m.config["batch_size"] = 16
@@ -66,7 +66,7 @@ dask_client = Client(cluster)
 ```
 
 This job script gets a single GPUs with "40GB" of memory with 10 cpus. We then ask for 10 instances of this setup.
-Now that we have a dask client, we can send our custom function. 
+Now that we have a dask client, we can send our custom function.
 
 ```
 def function_to_parallelize(tile):
@@ -89,7 +89,7 @@ for tile in tiles:
     futures.append(future)
 ```
 
-We can wait to see the futures as they complete! Dask also has a beautiful visualization tool using bokeh. 
+We can wait to see the futures as they complete! Dask also has a beautiful visualization tool using bokeh.
 
 ```
 for x in futures:

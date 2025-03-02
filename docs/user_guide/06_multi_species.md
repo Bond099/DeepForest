@@ -8,13 +8,13 @@ m = main.deepforest(config_args={"num_classes":2},label_dict={"Alive":0,"Dead":1
 ```
 
 It is often, but not always, useful to start with a prebuilt model when trying to identify multiple species. This helps the model focus on learning the multiple classes and not waste data and time re-learning bounding boxes. To load the backbone and box prediction portions of the release model, but create a classification model for more than one species.
-Here is an example using the alive/dead tree data stored in the package, but the same logic applies to other detectiors. 
+Here is an example using the alive/dead tree data stored in the package, but the same logic applies to other detectiors.
 
 ``` python
 # Initialize new Deepforest model ( the model that you will train ) with your classes
 m = main.deepforest(config_args={"num_classes":2}, label_dict={"Alive":0,"Dead":1})
 
-# Inatialize Deepforest model ( the model that you will modify its regression head ) 
+# Inatialize Deepforest model ( the model that you will modify its regression head )
 deepforest_release_model = main.deepforest()
 deepforest_release_model.load_model("weecology/deepforest-tree") # or load_model('weecology/deepforest-bird')
 
@@ -24,12 +24,12 @@ m.model.backbone.load_state_dict(deepforest_release_model.model.backbone.state_d
 # load regression head in the new model
 m.model.head.regression_head.load_state_dict(deepforest_release_model.model.head.regression_head.state_dict())
 
-m.config["train"]["csv_file"] = get_data("testfile_multi.csv") 
+m.config["train"]["csv_file"] = get_data("testfile_multi.csv")
 m.config["train"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
 m.config["train"]["fast_dev_run"] = True
 m.config["batch_size"] = 2
-    
-m.config["validation"]["csv_file"] = get_data("testfile_multi.csv") 
+
+m.config["validation"]["csv_file"] = get_data("testfile_multi.csv")
 m.config["validation"]["root_dir"] = os.path.dirname(get_data("testfile_multi.csv"))
 m.config["validation"]["val_accuracy_interval"] = 1
 

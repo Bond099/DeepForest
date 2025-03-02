@@ -31,13 +31,13 @@ def crop_model_data(crop_model, tmpdir):
     boxes = df[['xmin', 'ymin', 'xmax', 'ymax']].values.tolist()
     root_dir = os.path.dirname(get_data("SOAP_061.png"))
     images = df.image_path.values
-    
+
     crop_model.write_crops(boxes=boxes,
                            labels=df.label.values,
                            root_dir=root_dir,
                            images=images,
                            savedir=tmpdir)
-    
+
     return None
 
 def test_crop_model(
@@ -102,12 +102,12 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
         crop_model = model.CropModel(num_classes=num_classes)
         crop_model.create_trainer(fast_dev_run=True)
         crop_model.load_from_disk(train_dir=tmpdir, val_dir=tmpdir)
-        
+
         crop_model.trainer.fit(crop_model)
         checkpoint_path = os.path.join(tmpdir, "epoch=0-step=0.ckpt")
 
         crop_model.trainer.save_checkpoint(checkpoint_path)
-        
+
         # Load from checkpoint
         loaded_model = model.CropModel.load_from_checkpoint(
             checkpoint_path,
@@ -117,10 +117,10 @@ def test_crop_model_load_checkpoint(tmpdir, crop_model_data):
         # Test forward pass
         x = torch.rand(4, 3, 224, 224)
         output = loaded_model(x)
-        
+
         # Check output shape matches number of classes
         assert output.shape == (4, num_classes)
-        
+
         # Check model parameters were loaded
         for p1, p2 in zip(crop_model.parameters(), loaded_model.parameters()):
             assert torch.equal(p1, p2)

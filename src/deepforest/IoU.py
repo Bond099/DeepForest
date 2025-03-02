@@ -66,7 +66,7 @@ def _iou_(test_poly, truth_poly):
 
 def compute_IoU(ground_truth, submission):
     """
-    
+
     Args:
         ground_truth: a projected geopandas dataframe with geoemtry
         submission: a projected geopandas dataframe with geometry

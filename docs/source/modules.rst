@@ -9,4 +9,3 @@ API reference
    :maxdepth: 2
 
    deepforest
-

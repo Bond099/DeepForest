@@ -4,7 +4,7 @@ Deepforest uses a config.yml to control hyperparameters related to model trainin
 
 DeepForest includes a default sample config file named deepforest_config.yml. Users have the option to override this file by creating their own custom config file. Initially, DeepForest scans the current working directory for the file. If it's not found there, it automatically resorts to using the default configuration.
 
-You can edit this file to change settings while developing models. Please note that if you would like for deepforest to save the config file on reload (using deepforest.save_model), 
+You can edit this file to change settings while developing models. Please note that if you would like for deepforest to save the config file on reload (using deepforest.save_model),
 the config.yml must be updated instead of updating the dictionary of an already loaded model.
 
 ```
@@ -30,7 +30,7 @@ retinanet:
 train:
     csv_file:
     root_dir:
-    
+
     # Optimizer initial learning rate
     lr: 0.001
     scheduler:
@@ -60,10 +60,10 @@ train:
     fast_dev_run: False
     # pin images to GPU memory for fast training. This depends on GPU size and number of images.
     preload_images: False
-    
+
 validation:
     # callback args
-    csv_file: 
+    csv_file:
     root_dir:
     # Intersection over union evaluation
     iou_threshold: 0.4
@@ -133,7 +133,7 @@ This will be updated when you can predict_tile, predict_image, predict_file, or 
 
 ### csv_file
 
-Path to csv_file for training annotations. Annotations are `.csv` files with headers `image_path, xmin, ymin, xmax, ymax, label`. image_path are relative to the root_dir. 
+Path to csv_file for training annotations. Annotations are `.csv` files with headers `image_path, xmin, ymin, xmax, ymax, label`. image_path are relative to the root_dir.
 For example this file should have entries like `myimage.tif` not `/path/to/myimage.tif`
 
 ### root_dir
@@ -151,10 +151,10 @@ optim.SGD(self.model.parameters(), lr=self.config["train"]["lr"], momentum=0.9)
 A learning rate scheduler is used to adjust the learning rate based on validation loss. The default scheduler is ReduceLROnPlateau:
 
 ```
-self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', 
-                                                   factor=0.1, patience=10, 
-                                                   verbose=True, threshold=0.0001, 
-                                                   threshold_mode='rel', cooldown=0, 
+self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min',
+                                                   factor=0.1, patience=10,
+                                                   verbose=True, threshold=0.0001,
+                                                   threshold_mode='rel', cooldown=0,
                                                    min_lr=0, eps=1e-08)
 ```
 This default scheduler can be overridden by specifying a different scheduler in the config_args:
@@ -213,7 +213,7 @@ Optional validation dataloader to run during training.
 
 ### csv_file
 
-Path to csv_file for validation annotations. Annotations are `.csv` files with headers `image_path, xmin, ymin, xmax, ymax, label`. image_path are relative to the root_dir. 
+Path to csv_file for validation annotations. Annotations are `.csv` files with headers `image_path, xmin, ymin, xmax, ymax, label`. image_path are relative to the root_dir.
 For example this file should have entries like `myimage.tif` not `/path/to/myimage.tif`
 
 ### root_dir
@@ -222,5 +222,5 @@ Directory to search for images in the csv_file image_path column
 
 ### val_accuracy_interval
 
-Compute and log the classification accuracy of the predicted results computed every X epochs. 
+Compute and log the classification accuracy of the predicted results computed every X epochs.
 This incurs some reductions in speed of training and is most useful for multi-class models. To deactivate, set to an number larger than epochs.

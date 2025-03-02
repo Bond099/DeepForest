@@ -109,4 +109,3 @@ geospatial analysis in ecology, specifically for analyzing forest canopy data.
     source/modules
     development/index
     whatsnew/index
-

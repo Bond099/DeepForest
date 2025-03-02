@@ -45,4 +45,3 @@ To use images other than those in the sample data directory, provide the full pa
    5   258.0  198.0  291.0  230.0  Tree  0.716250  OSBS_029.png
    6    97.0  305.0  152.0  363.0  Tree  0.711664  OSBS_029.png
    7    52.0   72.0   85.0  108.0  Tree  0.698782  OSBS_029.png
-

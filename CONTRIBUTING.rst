@@ -11,7 +11,7 @@ Getting started
 2. Clone your copy of the repository.
 
    - **Using ssh**:
-   
+
      ``git clone git@github.com:[your user name]/DeepForest.git``
 
    - **Using https**:
@@ -204,13 +204,13 @@ For example:
 .. code-block:: python
 
    from deepforest import main
-   
+
    # Load model from checkpoint
    model = main.deepforest.load_from_checkpoint("path/to/checkpoint.ckpt")
-   
+
    # Set label dictionary mapping class names to indices
    model.label_dict = {"Livestock": 0}
-   
+
    # Push to weecology organization space
    model.push_to_hub("weecology/deepforest-livestock")
 

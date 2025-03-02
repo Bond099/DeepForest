@@ -33,5 +33,3 @@ How do I use a pretrained model to predict an image?
    </div>
 
 For single images, ``predict_image`` can read an image from memory or file and return predicted bounding boxes.
-
- 

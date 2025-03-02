@@ -47,7 +47,7 @@ Version 1.4.0 (Date: Oct 9, 2024)
 1. New model loading framework using HuggingFace. DeepForest models are now available on https://huggingface.co/weecology. The models can be loaded using load_model() and used for inference.
 2. An all purpose read_file method is introduced to read annotations from various formats including CSV, JSON, and Pascal VOC.
 3. The CropModel class is introduced to classify detected objects using a trained classification model. Use when a multi-class DeepForest model is not sufficiently flexible, such as when new data sources are used for fine-grained classification and class imbalance.
-4. deepforest.visualize.plot_results is now the primary method for visualizing predictions. The function is more flexible and allows for customizing the plot using supervision package. 
+4. deepforest.visualize.plot_results is now the primary method for visualizing predictions. The function is more flexible and allows for customizing the plot using supervision package.
 
 Additional features and enhancements include:
 
